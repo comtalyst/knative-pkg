@@ -30,7 +30,6 @@ import (
 	// Injection stuff
 
 	"knative.dev/pkg/controller"
-	kubeinformerfactory "knative.dev/pkg/injection/clients/namespacedkube/informers/factory"
 	"knative.dev/pkg/network/handlers"
 
 	"go.uber.org/zap"
@@ -38,6 +37,9 @@ import (
 	admissionv1 "k8s.io/api/admission/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/system"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
 // Options contains the configuration for the webhook
@@ -161,7 +163,8 @@ func New(
 		// of the admission controllers' informers *also* require the secret
 		// informer, then we can fetch the shared informer factory here and produce
 		// a new secret informer from it.
-		secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
+		//secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
+		betterClient := kubeclient.Get(ctx)
 
 		webhook.tlsConfig = &tls.Config{
 			MinVersion: opts.TLSMinVersion,
@@ -171,11 +174,19 @@ func New(
 			//
 			// We'll return (nil, nil) when we don't find a certificate
 			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-				secret, err := secretInformer.Lister().Secrets(system.Namespace()).Get(opts.SecretName)
+				var ns string // XPMT
+				if opts.SecretName == "karpenter-cert" {
+					ns = "default"
+				} else {
+					ns = system.Namespace()
+				}
+				secret, err := betterClient.CoreV1().Secrets(ns).Get(ctx, opts.SecretName, metav1.GetOptions{}) //secretInformer.Lister().Secrets(ns).Get(opts.SecretName)
 				if err != nil {
-					logger.Errorw("failed to fetch secret", zap.Error(err))
+					dumb, err2 := betterClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+					logger.Errorf("failed to fetch secrettttt XPMT: %v %v :::: %v", dumb, err2, zap.Error(err))
 					return nil, nil
 				}
+
 				webOpts := GetOptions(ctx)
 				sKey, sCert := getSecretDataKeyNamesOrDefault(webOpts.ServerPrivateKeyName, webOpts.ServerCertificateName)
 				serverKey, ok := secret.Data[sKey]
