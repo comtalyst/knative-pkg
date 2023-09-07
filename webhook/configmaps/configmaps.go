@@ -74,7 +74,13 @@ func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
 		return controller.NewSkipKey(key)
 	}
 
-	secret, err := ac.secretlister.Secrets(system.Namespace()).Get(ac.secretName)
+	var ns string // XPMT
+	if ac.secretName == "karpenter-cert" {
+		ns = "default"
+	} else {
+		ns = system.Namespace()
+	}
+	secret, err := ac.client.CoreV1().Secrets(ns).Get(ctx, ac.secretName, metav1.GetOptions{}) //ac.secretlister.Secrets(ns).Get(ac.secretName)
 	if err != nil {
 		logger.Errorw("Error fetching secret ", zap.Error(err))
 		return err
