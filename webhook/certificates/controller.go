@@ -20,7 +20,7 @@ import (
 	"context"
 
 	// Injection stuff
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	mwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/mutatingwebhookconfiguration"
 	vwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration"
@@ -51,14 +51,8 @@ func NewController(
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
 
-	var ns string // XPMT
-	if options.SecretName == "karpenter-cert" {
-		ns = "default"
-	} else {
-		ns = system.Namespace()
-	}
 	key := types.NamespacedName{
-		Namespace: ns,
+		Namespace: system.Namespace(),
 		Name:      options.SecretName,
 	}
 
@@ -83,10 +77,7 @@ func NewController(
 	// Reconcile when the named ValidatingWebhookConfiguration changes.
 	vwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
-			if object, ok := obj.(metav1.Object); ok {
-				return key.Namespace == object.GetNamespace()
-			}
-			return false
+			return true
 		},
 		Handler: controller.HandleAll(c.Enqueue),
 	})
@@ -94,17 +85,20 @@ func NewController(
 	// Reconcile when the named MutatingWebhookConfiguration changes.
 	mwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
-			if object, ok := obj.(metav1.Object); ok {
-				return key.Namespace == object.GetNamespace()
-			}
-			return false
+			return true
 		},
 		Handler: controller.HandleAll(c.Enqueue),
 	})
 
+	var ns string // XPMT
+	if options.SecretName == "karpenter-cert" {
+		ns = "default"
+	} else {
+		ns = system.Namespace()
+	}
 	// Reconcile when the cert bundle changes.
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(key.Namespace, key.Name),
+		FilterFunc: controller.FilterWithNameAndNamespace(ns, key.Name),
 		// It doesn't matter what we enqueue because we will always Reconcile
 		// the named MWH resource.
 		Handler: controller.HandleAll(c.Enqueue),
