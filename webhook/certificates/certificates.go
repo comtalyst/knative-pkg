@@ -63,7 +63,7 @@ func (r *reconciler) Reconcile(ctx context.Context, key string) error {
 func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
 
-	secret, err := r.secretlister.Secrets(r.key.Namespace).Get(r.key.Name)
+	secret, err := r.client.CoreV1().Secrets(r.key.Namespace).Get(ctx, r.key.Name, metav1.GetOptions{}) //r.secretlister.Secrets(r.key.Namespace).Get(r.key.Name)
 	if apierrors.IsNotFound(err) {
 		// The secret should be created explicitly by a higher-level system
 		// that's responsible for install/updates.  We simply populate the
