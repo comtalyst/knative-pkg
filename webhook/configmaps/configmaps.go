@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"go.uber.org/zap"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -160,7 +161,9 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 			continue
 		}
 		webhook.Webhooks[i].Rules = rules
-		webhook.Webhooks[i].ClientConfig.CABundle = caCert
+		if !strings.Contains(*webhook.Webhooks[i].ClientConfig.URL, ac.Path()) { // XPMT
+			webhook.Webhooks[i].ClientConfig.URL = ptr.String(*webhook.Webhooks[i].ClientConfig.URL + ac.Path())
+		}
 		webhook.Webhooks[i].ClientConfig.URL = ptr.String(*webhook.Webhooks[i].ClientConfig.URL + ac.Path())
 	}
 

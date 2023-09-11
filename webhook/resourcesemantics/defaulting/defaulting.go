@@ -253,7 +253,9 @@ func (ac *reconciler) reconcileMutatingWebhook(ctx context.Context, caCert []byt
 			})
 
 		cur.ClientConfig.CABundle = caCert
-		cur.ClientConfig.URL = ptr.String(*cur.ClientConfig.URL + ac.Path())
+		if !strings.Contains(*cur.ClientConfig.URL, ac.Path()) { // XPMT
+			cur.ClientConfig.URL = ptr.String(*cur.ClientConfig.URL + ac.Path())
+		}
 
 		cur.ReinvocationPolicy = ptrReinvocationPolicyType(admissionregistrationv1.IfNeededReinvocationPolicy)
 	}

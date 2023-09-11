@@ -228,7 +228,9 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 			})
 
 		cur.ClientConfig.CABundle = caCert
-		cur.ClientConfig.URL = ptr.String(*cur.ClientConfig.URL + ac.Path())
+		if !strings.Contains(*cur.ClientConfig.URL, ac.Path()) { // XPMT
+			cur.ClientConfig.URL = ptr.String(*cur.ClientConfig.URL + ac.Path())
+		}
 	}
 
 	if ok, err := kmp.SafeEqual(configuredWebhook, current); err != nil {
