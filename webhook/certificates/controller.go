@@ -90,7 +90,7 @@ func NewController(
 		Handler: controller.HandleAll(c.Enqueue),
 	})
 
-	var ns string // XPMT
+	var ns string // XPMT: Populate (outer)
 	if options.SecretName == "karpenter-cert" {
 		ns = "default"
 	} else {

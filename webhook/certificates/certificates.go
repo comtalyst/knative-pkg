@@ -63,7 +63,7 @@ func (r *reconciler) Reconcile(ctx context.Context, key string) error {
 func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
 
-	var ns string // XPMT
+	var ns string // XPMT: Populate (inner)
 	if r.key.Name == "karpenter-cert" {
 		ns = "default"
 	} else {

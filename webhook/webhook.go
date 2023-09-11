@@ -157,7 +157,7 @@ func New(
 			//
 			// We'll return (nil, nil) when we don't find a certificate
 			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-				var ns string // XPMT
+				var ns string // XPMT: fetch when needed
 				if opts.SecretName == "karpenter-cert" {
 					ns = "default"
 				} else {
