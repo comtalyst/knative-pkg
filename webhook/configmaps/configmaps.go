@@ -19,7 +19,6 @@ package configmaps
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -74,7 +73,7 @@ func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
 		return controller.NewSkipKey(key)
 	}
 
-	var ns string // XPMT
+	var ns string // XPMT: webhook definition reconcile
 	if ac.secretName == "karpenter-cert" {
 		ns = "default"
 	} else {
@@ -143,7 +142,13 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	webhook := configuredWebhook.DeepCopy()
 
 	// Set the owner to namespace.
-	ns, err := ac.client.CoreV1().Namespaces().Get(ctx, system.Namespace(), metav1.GetOptions{})
+	var nsStr string // XPMT: webhook definition reconcile
+	if ac.secretName == "karpenter-cert" {
+		nsStr = "default"
+	} else {
+		nsStr = system.Namespace()
+	}
+	ns, err := ac.client.CoreV1().Namespaces().Get(ctx, nsStr, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to fetch namespace: %w", err)
 	}
@@ -156,10 +161,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		}
 		webhook.Webhooks[i].Rules = rules
 		webhook.Webhooks[i].ClientConfig.CABundle = caCert
-		if webhook.Webhooks[i].ClientConfig.Service == nil {
-			return errors.New("missing service reference for webhook: " + wh.Name)
-		}
-		webhook.Webhooks[i].ClientConfig.Service.Path = ptr.String(ac.Path())
+		webhook.Webhooks[i].ClientConfig.URL = ptr.String(*webhook.Webhooks[i].ClientConfig.URL + ac.Path())
 	}
 
 	if ok, err := kmp.SafeEqual(configuredWebhook, webhook); err != nil {
