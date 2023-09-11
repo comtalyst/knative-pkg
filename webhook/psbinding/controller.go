@@ -105,9 +105,15 @@ func NewAdmissionController(
 		Handler:    handler,
 	})
 
+	var ns string // XPMT: ???
+	if options.SecretName == "karpenter-cert" {
+		ns = "default"
+	} else {
+		ns = system.Namespace()
+	}
 	// Reconcile when the cert bundle changes.
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(system.Namespace(), wh.SecretName),
+		FilterFunc: controller.FilterWithNameAndNamespace(ns, wh.SecretName),
 		Handler:    handler,
 	})
 

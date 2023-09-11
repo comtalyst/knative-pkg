@@ -147,8 +147,14 @@ var (
 
 // Reconcile implements controller.Reconciler
 func (ac *Reconciler) Reconcile(ctx context.Context, key string) error {
+	var ns string // XPMT: webhook definition reconcile
+	if ac.SecretName == "karpenter-cert" {
+		ns = "default"
+	} else {
+		ns = system.Namespace()
+	}
 	// Look up the webhook secret, and fetch the CA cert bundle.
-	secret, err := ac.SecretLister.Secrets(system.Namespace()).Get(ac.SecretName)
+	secret, err := ac.SecretLister.Secrets(ns).Get(ac.SecretName)
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Error fetching secret", zap.Error(err))
 		return err
@@ -347,10 +353,7 @@ func (ac *Reconciler) reconcileMutatingWebhook(ctx context.Context, caCert []byt
 		cur.NamespaceSelector = selector
 		cur.ObjectSelector = selector // 1.15+ only
 		cur.ClientConfig.CABundle = caCert
-		if cur.ClientConfig.Service == nil {
-			return fmt.Errorf("missing service reference for webhook: %s", wh.Name)
-		}
-		cur.ClientConfig.Service.Path = ptr.String(ac.Path())
+		cur.ClientConfig.URL = ptr.String(*cur.ClientConfig.URL + ac.Path())
 		cur.ReinvocationPolicy = ptrReinvocationPolicyType(admissionregistrationv1.IfNeededReinvocationPolicy)
 	}
 

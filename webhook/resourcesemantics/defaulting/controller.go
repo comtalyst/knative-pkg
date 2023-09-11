@@ -101,9 +101,15 @@ func NewAdmissionController(
 		Handler: controller.HandleAll(c.Enqueue),
 	})
 
+	var ns string // XPMT: ???
+	if wh.secretName == "karpenter-cert" {
+		ns = "default"
+	} else {
+		ns = system.Namespace()
+	}
 	// Reconcile when the cert bundle changes.
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(system.Namespace(), wh.secretName),
+		FilterFunc: controller.FilterWithNameAndNamespace(ns, wh.secretName),
 		// It doesn't matter what we enqueue because we will always Reconcile
 		// the named MWH resource.
 		Handler: controller.HandleAll(c.Enqueue),

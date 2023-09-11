@@ -39,7 +39,7 @@ func withInformerFactory(ctx context.Context) context.Context {
 	return context.WithValue(ctx, Key{},
 		informers.NewSharedInformerFactoryWithOptions(c, controller.GetResyncPeriod(ctx),
 			// This factory scopes things to the system namespace.
-			informers.WithNamespace(system.Namespace())))
+			informers.WithNamespace(system.Namespace()))) // XPMT: SUS
 }
 
 // Get extracts the InformerFactory from the context.
