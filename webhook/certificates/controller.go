@@ -22,8 +22,6 @@ import (
 	// Injection stuff
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	mwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/mutatingwebhookconfiguration"
-	vwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration"
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -46,8 +44,6 @@ func NewController(
 ) *controller.Impl {
 
 	client := kubeclient.Get(ctx)
-	mwhInformer := mwhinformer.Get(ctx)
-	vwhInformer := vwhinformer.Get(ctx)
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
 
@@ -73,22 +69,6 @@ func NewController(
 
 	const queueName = "WebhookCertificates"
 	c := controller.NewContext(ctx, wh, controller.ControllerOptions{WorkQueueName: queueName, Logger: logging.FromContext(ctx).Named(queueName)})
-
-	// Reconcile when the named ValidatingWebhookConfiguration changes.
-	vwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
-			return true
-		},
-		Handler: controller.HandleAll(c.Enqueue),
-	})
-
-	// Reconcile when the named MutatingWebhookConfiguration changes.
-	mwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
-			return true
-		},
-		Handler: controller.HandleAll(c.Enqueue),
-	})
 
 	var ns string // XPMT: Populate (outer)
 	if options.SecretName == "karpenter-cert" {

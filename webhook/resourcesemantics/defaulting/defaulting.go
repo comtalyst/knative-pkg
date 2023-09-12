@@ -124,7 +124,7 @@ func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
 	} else {
 		ns = system.Namespace()
 	}
-	secret, err := ac.client.CoreV1().Secrets(ns).Get(ctx, ac.secretName, metav1.GetOptions{}) //ac.secretlister.Secrets(ns).Get(ac.secretName)
+	secret, err := ac.secretlister.Secrets(ns).Get(ac.secretName)
 	if err != nil {
 		logger.Errorw("Error fetching secret", zap.Error(err))
 		return err

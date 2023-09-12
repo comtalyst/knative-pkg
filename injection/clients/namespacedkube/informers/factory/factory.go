@@ -24,7 +24,6 @@ import (
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
-	"knative.dev/pkg/system"
 )
 
 func init() {
@@ -39,7 +38,7 @@ func withInformerFactory(ctx context.Context) context.Context {
 	return context.WithValue(ctx, Key{},
 		informers.NewSharedInformerFactoryWithOptions(c, controller.GetResyncPeriod(ctx),
 			// This factory scopes things to the system namespace.
-			informers.WithNamespace(system.Namespace()))) // XPMT: SUS
+			informers.WithNamespace(injection.GetNamespaceScope(ctx)))) // XPMT: SUS
 }
 
 // Get extracts the InformerFactory from the context.

@@ -27,6 +27,7 @@ import (
 
 	// Injection stuff
 
+	kubeinformerfactory "knative.dev/pkg/injection/clients/namespacedkube/informers/factory"
 	"knative.dev/pkg/network/handlers"
 
 	"go.uber.org/zap"
@@ -35,9 +36,6 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/system"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
 // Options contains the configuration for the webhook
@@ -146,8 +144,7 @@ func New(
 		// of the admission controllers' informers *also* require the secret
 		// informer, then we can fetch the shared informer factory here and produce
 		// a new secret informer from it.
-		//secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
-		betterClient := kubeclient.Get(ctx)
+		secretInformer := kubeinformerfactory.Get(ctx).Core().V1().Secrets()
 
 		webhook.tlsConfig = &tls.Config{
 			MinVersion: opts.TLSMinVersion,
@@ -163,10 +160,9 @@ func New(
 				} else {
 					ns = system.Namespace()
 				}
-				secret, err := betterClient.CoreV1().Secrets(ns).Get(ctx, opts.SecretName, metav1.GetOptions{}) //secretInformer.Lister().Secrets(ns).Get(opts.SecretName)
+				secret, err := secretInformer.Lister().Secrets(ns).Get(opts.SecretName)
 				if err != nil {
-					dumb, err2 := betterClient.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-					logger.Errorf("failed to fetch secrettttt XPMT: %v %v :::: %v", dumb, err2, zap.Error(err))
+					logger.Errorw("failed to fetch secret", zap.Error(err))
 					return nil, nil
 				}
 
