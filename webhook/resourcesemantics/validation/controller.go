@@ -22,6 +22,7 @@ import (
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	vwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration"
+	"knative.dev/pkg/injection"
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -30,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
@@ -87,15 +87,9 @@ func NewAdmissionControllerWithConfig(
 		Handler: controller.HandleAll(c.Enqueue),
 	})
 
-	var ns string // XPMT: Populate (outer)
-	if wh.secretName == "karpenter-cert" {
-		ns = "default"
-	} else {
-		ns = system.Namespace()
-	}
 	// Reconcile when the cert bundle changes.
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(ns, wh.secretName),
+		FilterFunc: controller.FilterWithNameAndNamespace(injection.GetNamespaceScope(ctx), wh.secretName), // XPMT: use injected namespace instead of adding separate logic
 		// It doesn't matter what we enqueue because we will always Reconcile
 		// the named VWH resource.
 		Handler: controller.HandleAll(c.Enqueue),

@@ -20,8 +20,8 @@ import (
 	"context"
 
 	// Injection stuff
-
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/injection"
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -70,15 +70,9 @@ func NewController(
 	const queueName = "WebhookCertificates"
 	c := controller.NewContext(ctx, wh, controller.ControllerOptions{WorkQueueName: queueName, Logger: logging.FromContext(ctx).Named(queueName)})
 
-	var ns string // XPMT: Populate (outer)
-	if options.SecretName == "karpenter-cert" {
-		ns = "default"
-	} else {
-		ns = system.Namespace()
-	}
 	// Reconcile when the cert bundle changes.
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(ns, key.Name),
+		FilterFunc: controller.FilterWithNameAndNamespace(injection.GetNamespaceScope(ctx), key.Name), // XPMT: use injected namespace instead of adding separate logic
 		// It doesn't matter what we enqueue because we will always Reconcile
 		// the named MWH resource.
 		Handler: controller.HandleAll(c.Enqueue),

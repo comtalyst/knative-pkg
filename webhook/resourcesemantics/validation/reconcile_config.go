@@ -34,11 +34,11 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 	"knative.dev/pkg/kmp"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
 	pkgreconciler "knative.dev/pkg/reconciler"
-	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
 	"knative.dev/pkg/webhook/resourcesemantics"
@@ -83,13 +83,7 @@ func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	// Look up the webhook secret, and fetch the CA cert bundle.
-	var ns string // XPMT: webhook definition reconcile
-	if ac.secretName == "karpenter-cert" {
-		ns = "default"
-	} else {
-		ns = system.Namespace()
-	}
-	secret, err := ac.secretlister.Secrets(ns).Get(ac.secretName)
+	secret, err := ac.secretlister.Secrets(injection.GetNamespaceScope(ctx)).Get(ac.secretName) // XPMT: use injected namespace instead of adding separate logic
 	if err != nil {
 		logger.Errorw("Error fetching secret", zap.Error(err))
 		return err
@@ -198,13 +192,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	current := configuredWebhook.DeepCopy()
 
 	// Set the owner to namespace.
-	var nsStr string // XPMT: webhook definition reconcile
-	if ac.secretName == "karpenter-cert" {
-		nsStr = "default"
-	} else {
-		nsStr = system.Namespace()
-	}
-	ns, err := ac.client.CoreV1().Namespaces().Get(ctx, nsStr, metav1.GetOptions{})
+	ns, err := ac.client.CoreV1().Namespaces().Get(ctx, injection.GetNamespaceScope(ctx), metav1.GetOptions{}) // XPMT: use injected namespace instead of adding separate logic
 	if err != nil {
 		return fmt.Errorf("failed to fetch namespace: %w", err)
 	}

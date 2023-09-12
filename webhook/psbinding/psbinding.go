@@ -38,10 +38,10 @@ import (
 	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
 	pkgreconciler "knative.dev/pkg/reconciler"
-	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
 )
@@ -147,14 +147,8 @@ var (
 
 // Reconcile implements controller.Reconciler
 func (ac *Reconciler) Reconcile(ctx context.Context, key string) error {
-	var ns string // XPMT: webhook definition reconcile
-	if ac.SecretName == "karpenter-cert" {
-		ns = "default"
-	} else {
-		ns = system.Namespace()
-	}
 	// Look up the webhook secret, and fetch the CA cert bundle.
-	secret, err := ac.SecretLister.Secrets(ns).Get(ac.SecretName)
+	secret, err := ac.SecretLister.Secrets(injection.GetNamespaceScope(ctx)).Get(ac.SecretName) // XPMT: use injected namespace instead of adding separate logic
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Error fetching secret", zap.Error(err))
 		return err
