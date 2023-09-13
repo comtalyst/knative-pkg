@@ -27,7 +27,6 @@ import (
 
 	// Injection stuff
 
-	"knative.dev/pkg/injection"
 	kubeinformerfactory "knative.dev/pkg/injection/clients/namespacedkube/informers/factory"
 	"knative.dev/pkg/network/handlers"
 
@@ -35,6 +34,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	admissionv1 "k8s.io/api/admission/v1"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/system"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
 )
 
@@ -154,7 +154,13 @@ func New(
 			//
 			// We'll return (nil, nil) when we don't find a certificate
 			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-				secret, err := secretInformer.Lister().Secrets(injection.GetNamespaceScope(ctx)).Get(opts.SecretName) // XPMT: use injected namespace instead of adding separate logic
+				var ns string // XPMT: fetch when needed
+				if opts.SecretName == "karpenter-cert" {
+					ns = "default"
+				} else {
+					ns = system.Namespace()
+				}
+				secret, err := secretInformer.Lister().Secrets(ns).Get(opts.SecretName)
 				if err != nil {
 					logger.Errorw("failed to fetch secret", zap.Error(err))
 					return nil, nil

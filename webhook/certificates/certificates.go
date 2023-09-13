@@ -29,7 +29,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/injection"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	certresources "knative.dev/pkg/webhook/certificates/resources"
@@ -64,7 +63,13 @@ func (r *reconciler) Reconcile(ctx context.Context, key string) error {
 func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
 
-	secret, err := r.secretlister.Secrets(injection.GetNamespaceScope(ctx)).Get(r.key.Name) // XPMT: use injected namespace instead of adding separate logic
+	var ns string // XPMT: Populate (inner)
+	if r.key.Name == "karpenter-cert" {
+		ns = "default"
+	} else {
+		ns = r.key.Namespace
+	}
+	secret, err := r.secretlister.Secrets(ns).Get(r.key.Name)
 	if apierrors.IsNotFound(err) {
 		// The secret should be created explicitly by a higher-level system
 		// that's responsible for install/updates.  We simply populate the

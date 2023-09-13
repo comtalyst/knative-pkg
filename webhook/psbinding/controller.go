@@ -22,7 +22,6 @@ import (
 	// Injection stuff
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	mwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/mutatingwebhookconfiguration"
-	"knative.dev/pkg/injection"
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -32,6 +31,7 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
+	"knative.dev/pkg/system"
 	"knative.dev/pkg/webhook"
 )
 
@@ -105,9 +105,15 @@ func NewAdmissionController(
 		Handler:    handler,
 	})
 
+	var ns string // XPMT: ???
+	if options.SecretName == "karpenter-cert" {
+		ns = "default"
+	} else {
+		ns = system.Namespace()
+	}
 	// Reconcile when the cert bundle changes.
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterWithNameAndNamespace(injection.GetNamespaceScope(ctx), wh.SecretName), // XPMT: use injected namespace instead of adding separate logic
+		FilterFunc: controller.FilterWithNameAndNamespace(ns, wh.SecretName),
 		Handler:    handler,
 	})
 
