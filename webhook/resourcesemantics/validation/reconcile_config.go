@@ -85,7 +85,7 @@ func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
 	// Look up the webhook secret, and fetch the CA cert bundle.
 	var ns string // XPMT: webhook definition reconcile
 	if ac.secretName == "karpenter-cert" {
-		ns = "default"
+		ns = "kube-system"
 	} else {
 		ns = system.Namespace()
 	}
@@ -200,7 +200,7 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 	// Set the owner to namespace.
 	var nsStr string // XPMT: webhook definition reconcile
 	if ac.secretName == "karpenter-cert" {
-		nsStr = "default"
+		nsStr = "kube-system"
 	} else {
 		nsStr = system.Namespace()
 	}

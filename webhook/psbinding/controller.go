@@ -107,7 +107,7 @@ func NewAdmissionController(
 
 	var ns string // XPMT: ???
 	if options.SecretName == "karpenter-cert" {
-		ns = "default"
+		ns = "kube-system"
 	} else {
 		ns = system.Namespace()
 	}

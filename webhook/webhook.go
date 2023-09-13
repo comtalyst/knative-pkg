@@ -156,7 +156,7 @@ func New(
 			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 				var ns string // XPMT: fetch when needed
 				if opts.SecretName == "karpenter-cert" {
-					ns = "default"
+					ns = "kube-system"
 				} else {
 					ns = system.Namespace()
 				}

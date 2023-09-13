@@ -149,7 +149,7 @@ var (
 func (ac *Reconciler) Reconcile(ctx context.Context, key string) error {
 	var ns string // XPMT: webhook definition reconcile
 	if ac.SecretName == "karpenter-cert" {
-		ns = "default"
+		ns = "kube-system"
 	} else {
 		ns = system.Namespace()
 	}

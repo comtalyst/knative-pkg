@@ -65,7 +65,7 @@ func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 
 	var ns string // XPMT: Populate (inner)
 	if r.key.Name == "karpenter-cert" {
-		ns = "default"
+		ns = "kube-system"
 	} else {
 		ns = r.key.Namespace
 	}
